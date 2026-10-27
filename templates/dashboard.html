@@ -1,0 +1,340 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- ===== PAGE HEADER ===== -->
+  <div class="d-flex flex-wrap align-items-center justify-content-between mb-4 gap-3">
+    <div>
+      <h3 class="fw-bold mb-1">
+        <i class="fa-solid fa-chart-line text-success me-2"></i>
+        Climate Health Dashboard
+      </h3>
+      <p class="text-muted mb-0 small">
+        Hello, <strong>{{ user.name }}</strong> ·
+        {{ user.age_group }} · {{ user.occupation }} · {{ user.lifestyle }}
+        {% if user.sensitivities and user.sensitivities != ['None'] %}
+          · <span class="text-danger">{{ user.sensitivities | join(', ') }}</span>
+        {% endif %}
+      </p>
+    </div>
+    <span class="text-muted small"><i class="fa-solid fa-clock me-1"></i>{{ now }}</span>
+  </div>
+
+  <!-- ===== LOCATION SEARCH FORM ===== -->
+  <div class="envita-card p-4 mb-4">
+    <form method="POST" action="/dashboard" class="d-flex gap-3 flex-wrap align-items-end">
+      <div class="flex-grow-1">
+        <label class="form-label fw-semibold small mb-1">
+          <i class="fa-solid fa-map-location-dot me-1 text-success"></i>Enter Your Location
+        </label>
+        <input type="text"
+               class="form-control form-control-lg envita-input"
+               name="location"
+               placeholder="e.g. London, Karachi, New York"
+               value="{{ location or '' }}"
+               required>
+      </div>
+      <button type="submit" class="btn btn-envita btn-lg" id="analyzeBtn">
+        <i class="fa-solid fa-magnifying-glass me-2"></i>Analyse
+      </button>
+    </form>
+  </div>
+
+  {% if assessment %}
+
+  <!-- ===== EARLY WARNING BANNER ===== -->
+  {% if assessment.warnings %}
+  <div class="alert alert-danger alert-warning-banner mb-4" role="alert">
+    <div class="d-flex align-items-center mb-2">
+      <i class="fa-solid fa-triangle-exclamation fa-lg me-2"></i>
+      <strong>High Risk Alert — {{ assessment.location }}</strong>
+    </div>
+    {% for warning in assessment.warnings %}
+    <div class="d-flex align-items-start gap-2 mt-1">
+      <span>{{ warning }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- ===== TOP METRICS ROW ===== -->
+  <div class="row g-3 mb-4">
+
+    <!-- Climate Health Score -->
+    <div class="col-md-6 col-lg-3">
+      <div class="metric-card h-100 text-center score-card">
+        <div class="metric-label">Climate Health Score</div>
+        <div class="score-circle mx-auto my-3"
+             data-score="{{ assessment.score }}"
+             style="--score-color: {{ assessment.risk_color }};">
+          <svg viewBox="0 0 100 100" class="score-svg">
+            <circle class="score-bg" cx="50" cy="50" r="42"/>
+            <circle class="score-fill" cx="50" cy="50" r="42"
+                    stroke="{{ assessment.risk_color }}"
+                    stroke-dasharray="{{ (assessment.score / 100 * 263.9) | round(1) }} 263.9"/>
+          </svg>
+          <div class="score-value">{{ assessment.score }}</div>
+          <div class="score-max">/100</div>
+        </div>
+        <div class="risk-badge" style="background: {{ assessment.risk_color }}20; color: {{ assessment.risk_color }}; border: 1px solid {{ assessment.risk_color }}40;">
+          <i class="fa-solid {{ assessment.risk_icon }} me-1"></i>
+          {{ assessment.risk_category }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Weather Card -->
+    <div class="col-md-6 col-lg-3">
+      <div class="metric-card h-100">
+        <div class="metric-label">
+          <i class="fa-solid fa-cloud-sun me-1 text-warning"></i>Current Weather
+        </div>
+        <div class="metric-location mt-1 mb-3">
+          <i class="fa-solid fa-location-dot me-1 text-danger"></i>
+          {{ assessment.location }}
+        </div>
+        <div class="weather-temp">{{ assessment.weather.temperature }}°C</div>
+        <div class="weather-desc">{{ assessment.weather.description }}</div>
+        <div class="weather-feels small text-muted mt-1">
+          Feels like {{ assessment.weather.feels_like }}°C
+        </div>
+        <hr class="my-3">
+        <div class="row g-2 text-center">
+          <div class="col-6">
+            <div class="mini-stat">
+              <i class="fa-solid fa-droplet text-info"></i>
+              <div class="mini-stat-val">{{ assessment.weather.humidity }}%</div>
+              <div class="mini-stat-label">Humidity</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="mini-stat">
+              <i class="fa-solid fa-wind text-secondary"></i>
+              <div class="mini-stat-val">{{ assessment.weather.wind_speed }} m/s</div>
+              <div class="mini-stat-label">Wind</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AQI Card -->
+    <div class="col-md-6 col-lg-3">
+      <div class="metric-card h-100">
+        <div class="metric-label">
+          <i class="fa-solid fa-smog me-1 text-warning"></i>Air Quality Index
+        </div>
+        <div class="aqi-display mt-3">
+          <div class="aqi-value">{{ assessment.aqi_data.aqi }}</div>
+          <div class="aqi-badge badge bg-{{ assessment.aqi_badge }} mt-1">
+            {{ assessment.aqi_label }}
+          </div>
+        </div>
+        <div class="aqi-bar-wrap mt-3">
+          <div class="aqi-bar">
+            <div class="aqi-bar-fill" style="width: {{ [assessment.aqi_data.aqi / 500 * 100, 100] | min }}%;"></div>
+          </div>
+          <div class="d-flex justify-content-between small text-muted mt-1">
+            <span>0</span><span>500</span>
+          </div>
+        </div>
+        <hr class="my-3">
+        <div class="row g-2 text-center">
+          <div class="col-6">
+            <div class="mini-stat">
+              <i class="fa-solid fa-circle-dot text-warning"></i>
+              <div class="mini-stat-val">{{ assessment.aqi_data.pm25 }}</div>
+              <div class="mini-stat-label">PM2.5 µg/m³</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="mini-stat">
+              <i class="fa-solid fa-circle-dot text-secondary"></i>
+              <div class="mini-stat-val">{{ assessment.aqi_data.pm10 }}</div>
+              <div class="mini-stat-label">PM10 µg/m³</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- UV & More -->
+    <div class="col-md-6 col-lg-3">
+      <div class="metric-card h-100">
+        <div class="metric-label">
+          <i class="fa-solid fa-sun me-1 text-warning"></i>UV & Conditions
+        </div>
+        <div class="uv-display mt-3">
+          <div class="uv-value">{{ assessment.weather.uv_index }}</div>
+          <div class="uv-label">UV Index</div>
+        </div>
+        <div class="uv-scale mt-2">
+          {% set uv = assessment.weather.uv_index %}
+          <span class="uv-level {{ 'active' if uv < 3 else '' }}">Low</span>
+          <span class="uv-level {{ 'active' if 3 <= uv < 6 else '' }}">Mod</span>
+          <span class="uv-level uv-high {{ 'active' if 6 <= uv < 8 else '' }}">High</span>
+          <span class="uv-level uv-vhigh {{ 'active' if 8 <= uv < 11 else '' }}">V.High</span>
+          <span class="uv-level uv-ext {{ 'active' if uv >= 11 else '' }}">Ext</span>
+        </div>
+        <hr class="my-3">
+        <div class="score-breakdown-mini">
+          <div class="d-flex justify-content-between small mb-1">
+            <span><i class="fa-solid fa-smog me-1"></i>AQI Impact</span>
+            <span class="fw-semibold">{{ assessment.breakdown.aqi_component }}</span>
+          </div>
+          <div class="d-flex justify-content-between small mb-1">
+            <span><i class="fa-solid fa-temperature-half me-1"></i>Temp Impact</span>
+            <span class="fw-semibold">{{ assessment.breakdown.temp_component }}</span>
+          </div>
+          <div class="d-flex justify-content-between small">
+            <span><i class="fa-solid fa-sun me-1"></i>UV Impact</span>
+            <span class="fw-semibold">{{ assessment.breakdown.uv_component }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <!-- End top row -->
+
+  <!-- ===== AI RECOMMENDATIONS ===== -->
+  {% if ai_sections %}
+  <div class="row g-4 mb-4">
+
+    <!-- Risk Explanation + Precautions -->
+    <div class="col-lg-6">
+      <div class="envita-card p-4 h-100">
+        <div class="card-section-title">
+          <i class="fa-solid fa-robot text-success me-2"></i>AI Climate Health Report
+          <span class="badge bg-success-soft text-success ms-2 small">Powered by Gemini</span>
+        </div>
+
+        {% if ai_sections.risk_explanation %}
+        <div class="ai-block mt-3">
+          <h5 class="ai-section-title">🌍 Climate Risk Explanation</h5>
+          {{ ai_sections.risk_explanation | safe }}
+        </div>
+        {% endif %}
+
+        {% if ai_sections.precautions %}
+        <div class="ai-block mt-3">
+          <h5 class="ai-section-title">⚠️ Personalized Precautions</h5>
+          {{ ai_sections.precautions | safe }}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Recommendations + Tips -->
+    <div class="col-lg-6">
+      <div class="envita-card p-4 h-100">
+        <div class="card-section-title">
+          <i class="fa-solid fa-lightbulb text-warning me-2"></i>Recommendations & Tips
+        </div>
+
+        {% if ai_sections.recommendations %}
+        <div class="ai-block mt-3">
+          <h5 class="ai-section-title">✅ Personalized Recommendations</h5>
+          {{ ai_sections.recommendations | safe }}
+        </div>
+        {% endif %}
+
+        {% if ai_sections.safety_tips %}
+        <div class="ai-block mt-3">
+          <h5 class="ai-section-title">💡 Daily Safety Tips</h5>
+          {{ ai_sections.safety_tips | safe }}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Environmental Insights -->
+  {% if ai_sections.insights %}
+  <div class="envita-card p-4 mb-4">
+    <div class="card-section-title">
+      <i class="fa-solid fa-chart-bar text-primary me-2"></i>Environmental Insights
+    </div>
+    <div class="ai-block mt-3">
+      {{ ai_sections.insights | safe }}
+    </div>
+  </div>
+  {% endif %}
+
+  {% endif %}
+  <!-- End AI sections -->
+
+  <!-- ===== SCORE BREAKDOWN ===== -->
+  <div class="envita-card p-4 mb-4">
+    <div class="card-section-title mb-3">
+      <i class="fa-solid fa-sliders text-success me-2"></i>Score Breakdown
+    </div>
+    <div class="row g-3">
+      <div class="col-md-4">
+        <div class="breakdown-item">
+          <div class="d-flex justify-content-between mb-1">
+            <span class="small fw-semibold"><i class="fa-solid fa-smog me-1"></i>Air Quality (45%)</span>
+            <span class="small text-muted">{{ assessment.breakdown.aqi_component }}/45</span>
+          </div>
+          <div class="progress" style="height:8px;">
+            <div class="progress-bar bg-warning" style="width: {{ (assessment.breakdown.aqi_component / 45 * 100) | round }}%;"></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="breakdown-item">
+          <div class="d-flex justify-content-between mb-1">
+            <span class="small fw-semibold"><i class="fa-solid fa-temperature-half me-1"></i>Temperature (30%)</span>
+            <span class="small text-muted">{{ assessment.breakdown.temp_component }}/30</span>
+          </div>
+          <div class="progress" style="height:8px;">
+            <div class="progress-bar bg-danger" style="width: {{ (assessment.breakdown.temp_component / 30 * 100) | round }}%;"></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="breakdown-item">
+          <div class="d-flex justify-content-between mb-1">
+            <span class="small fw-semibold"><i class="fa-solid fa-sun me-1"></i>UV Index (25%)</span>
+            <span class="small text-muted">{{ assessment.breakdown.uv_component }}/25</span>
+          </div>
+          <div class="progress" style="height:8px;">
+            <div class="progress-bar bg-info" style="width: {{ (assessment.breakdown.uv_component / 25 * 100) | round }}%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mt-3 pt-3 border-top d-flex flex-wrap gap-4 small text-muted">
+      <span><i class="fa-solid fa-user me-1"></i>Profile multiplier: ×{{ assessment.breakdown.profile_multiplier }}</span>
+      <span><i class="fa-solid fa-heart-pulse me-1"></i>Sensitivity bonus: +{{ assessment.breakdown.sensitivity_bonus }}</span>
+      <span><i class="fa-solid fa-calculator me-1"></i>Final score: <strong class="text-dark">{{ assessment.score }}/100</strong></span>
+    </div>
+  </div>
+
+  {% else %}
+  <!-- Empty state -->
+  <div class="envita-card p-5 text-center">
+    <i class="fa-solid fa-map-location-dot fa-3x text-muted mb-3"></i>
+    <h5 class="text-muted">Enter a location to start your climate health assessment</h5>
+    <p class="text-muted small">Type a city name above and click "Analyse" to get real-time environmental data and personalised recommendations.</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Loading state for the analyse button
+document.querySelector('form')?.addEventListener('submit', function () {
+  const btn = document.getElementById('analyzeBtn');
+  if (btn) {
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Analysing…';
+    btn.disabled = true;
+  }
+});
+</script>
+{% endblock %}

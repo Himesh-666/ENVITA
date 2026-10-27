@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block title %}Create Profile{% endblock %}
+
+{% block content %}
+<section class="py-5 page-header-section">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-7">
+
+        <!-- Header -->
+        <div class="text-center mb-4">
+          <div class="page-icon-wrap mx-auto mb-3">
+            <i class="fa-solid fa-user-circle fa-2x text-success"></i>
+          </div>
+          <h2 class="fw-bold">Your Climate Health Profile</h2>
+          <p class="text-muted">Tell us a bit about yourself so ENVITA can personalise your climate health assessment.</p>
+        </div>
+
+        <!-- Form Card -->
+        <div class="envita-card p-4 p-md-5">
+          <form method="POST" action="/profile" novalidate>
+
+            <!-- Name -->
+            <div class="mb-4">
+              <label class="form-label fw-semibold" for="name">
+                <i class="fa-solid fa-signature me-2 text-success"></i>Your Name
+              </label>
+              <input type="text"
+                     class="form-control form-control-lg envita-input"
+                     id="name" name="name"
+                     placeholder="e.g. Alex Johnson"
+                     value="{{ form_data.get('name', '') }}"
+                     required maxlength="100">
+            </div>
+
+            <!-- Age Group -->
+            <div class="mb-4">
+              <label class="form-label fw-semibold">
+                <i class="fa-solid fa-cake-candles me-2 text-success"></i>Age Group
+              </label>
+              <div class="radio-card-group">
+                {% for option in ['Child', 'Teen', 'Adult', 'Elderly'] %}
+                <label class="radio-card {% if form_data.get('age_group') == option %}selected{% endif %}">
+                  <input type="radio" name="age_group" value="{{ option }}"
+                         {% if form_data.get('age_group') == option %}checked{% endif %} required>
+                  <span class="radio-card-icon">
+                    {% if option == 'Child' %}<i class="fa-solid fa-child"></i>
+                    {% elif option == 'Teen' %}<i class="fa-solid fa-person-skating"></i>
+                    {% elif option == 'Adult' %}<i class="fa-solid fa-person"></i>
+                    {% else %}<i class="fa-solid fa-person-cane"></i>{% endif %}
+                  </span>
+                  <span class="radio-card-label">{{ option }}</span>
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+
+            <!-- Occupation -->
+            <div class="mb-4">
+              <label class="form-label fw-semibold" for="occupation">
+                <i class="fa-solid fa-briefcase me-2 text-success"></i>Occupation
+              </label>
+              <select class="form-select form-select-lg envita-input" id="occupation" name="occupation" required>
+                <option value="" disabled {% if not form_data.get('occupation') %}selected{% endif %}>Select your occupation…</option>
+                {% for opt in ['Student', 'Office Worker', 'Outdoor Worker', 'Athlete', 'Other'] %}
+                <option value="{{ opt }}" {% if form_data.get('occupation') == opt %}selected{% endif %}>{{ opt }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <!-- Lifestyle -->
+            <div class="mb-4">
+              <label class="form-label fw-semibold">
+                <i class="fa-solid fa-person-running me-2 text-success"></i>Daily Lifestyle
+              </label>
+              <div class="radio-card-group">
+                {% for option in ['Mostly Indoor', 'Mixed', 'Mostly Outdoor'] %}
+                <label class="radio-card {% if form_data.get('lifestyle') == option %}selected{% endif %}">
+                  <input type="radio" name="lifestyle" value="{{ option }}"
+                         {% if form_data.get('lifestyle') == option %}checked{% endif %} required>
+                  <span class="radio-card-icon">
+                    {% if option == 'Mostly Indoor' %}<i class="fa-solid fa-house"></i>
+                    {% elif option == 'Mixed' %}<i class="fa-solid fa-arrows-left-right"></i>
+                    {% else %}<i class="fa-solid fa-tree"></i>{% endif %}
+                  </span>
+                  <span class="radio-card-label">{{ option }}</span>
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+
+            <!-- Health Sensitivities -->
+            <div class="mb-5">
+              <label class="form-label fw-semibold">
+                <i class="fa-solid fa-heart-pulse me-2 text-success"></i>Health Sensitivities
+                <span class="text-muted fw-normal small">(Select all that apply)</span>
+              </label>
+              <div class="row g-2">
+                {% set sens_options = [
+                  ('Asthma', 'fa-lungs', 'Asthma'),
+                  ('Respiratory Issues', 'fa-wind', 'Respiratory Issues'),
+                  ('Heat Sensitive', 'fa-temperature-high', 'Heat Sensitive'),
+                  ('None', 'fa-circle-check', 'None / Not Applicable')
+                ] %}
+                {% for val, icon, label in sens_options %}
+                <div class="col-sm-6">
+                  <label class="checkbox-card w-100">
+                    <input type="checkbox" name="sensitivities" value="{{ val }}"
+                           {% if val in (form_data.get('sensitivities') or []) %}checked{% endif %}
+                           id="sens_{{ loop.index }}">
+                    <i class="fa-solid {{ icon }} me-2 text-success"></i>
+                    {{ label }}
+                    <i class="fa-solid fa-check ms-auto check-icon"></i>
+                  </label>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <!-- Submit -->
+            <button type="submit" class="btn btn-envita btn-lg w-100">
+              <i class="fa-solid fa-chart-line me-2"></i>Save Profile & Go to Dashboard
+            </button>
+
+          </form>
+        </div>
+
+        <!-- Privacy note -->
+        <p class="text-center text-muted small mt-3">
+          <i class="fa-solid fa-lock me-1"></i>
+          Your data is stored locally and never shared with third parties.
+        </p>
+
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Radio card selection highlight
+document.querySelectorAll('.radio-card input[type="radio"]').forEach(input => {
+  input.addEventListener('change', () => {
+    const group = input.closest('.radio-card-group');
+    group.querySelectorAll('.radio-card').forEach(c => c.classList.remove('selected'));
+    input.closest('.radio-card').classList.add('selected');
+  });
+});
+
+// "None" sensitivity checkbox logic
+const noneCheckbox = document.getElementById('sens_4');
+const otherCheckboxes = document.querySelectorAll('input[name="sensitivities"]:not(#sens_4)');
+if (noneCheckbox) {
+  noneCheckbox.addEventListener('change', () => {
+    if (noneCheckbox.checked) {
+      otherCheckboxes.forEach(cb => { cb.checked = false; });
+    }
+  });
+  otherCheckboxes.forEach(cb => {
+    cb.addEventListener('change', () => {
+      if (cb.checked) noneCheckbox.checked = false;
+    });
+  });
+}
+</script>
+{% endblock %}

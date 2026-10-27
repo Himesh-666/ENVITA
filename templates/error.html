@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Error {{ code }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6 text-center">
+      <div class="error-icon mb-4">
+        {% if code == 404 %}
+          <i class="fa-solid fa-map-pin fa-4x text-muted"></i>
+        {% else %}
+          <i class="fa-solid fa-circle-exclamation fa-4x text-danger"></i>
+        {% endif %}
+      </div>
+      <h1 class="display-1 fw-bold text-success">{{ code }}</h1>
+      <h4 class="text-muted mb-3">{{ message }}</h4>
+      {% if code == 404 %}
+        <p class="text-muted">The page you're looking for doesn't exist or has been moved.</p>
+      {% else %}
+        <p class="text-muted">Something went wrong on our end. Please try again shortly.</p>
+      {% endif %}
+      <a href="/" class="btn btn-envita mt-3">
+        <i class="fa-solid fa-house me-2"></i>Back to Home
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}
